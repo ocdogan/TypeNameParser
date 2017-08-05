@@ -1,18 +1,10 @@
 ﻿<Properties StartupConfiguration="{97678F01-351F-4016-AE1B-1100C6FA80CA}|Default">
-  <MonoDevelop.Ide.Workbench ActiveDocument="TypeNameParserTest/Program.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="TypeNameParserTest/Program.TestCases.cs">
     <Files>
-      <File FileName="TypeNameParserTest/Program.cs" Line="7" Column="1" />
+      <File FileName="TypeNameParserTest/Program.cs" Line="18" Column="17" />
+      <File FileName="TypeNameParserTest/Program.TestCases.cs" Line="31" Column="1" />
+      <File FileName="TypeNameResolver/TypeNameScope.cs" Line="264" Column="1" />
     </Files>
-    <Pads>
-      <Pad Id="ProjectPad">
-        <State name="__root__">
-          <Node name="TypeNameParser" expanded="True">
-            <Node name="TypeNameParserTest" expanded="True" selected="True" />
-            <Node name="TypeNameResolver" expanded="True" />
-          </Node>
-        </State>
-      </Pad>
-    </Pads>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|x86" />
   <MonoDevelop.Ide.DebuggingService.Breakpoints>

@@ -169,9 +169,6 @@ namespace TypeNameResolver
                         {
                             if (context.CurrentChar < '0' || context.CurrentChar > '9')
                             {
-                                if (context.CurrentChar != '[')
-                                    throw context.DefaultError();
-
                                 context.Previous();
                                 context.Token = TypeNameToken.GenericsCountEnd;
                             }
@@ -183,10 +180,18 @@ namespace TypeNameResolver
                         break;
                     case TypeNameToken.GenericsCountEnd:
                         {
-                            if (context.CurrentChar != '[')
-                                throw context.DefaultError();
+							if (context.CurrentChar != '[')
+							{
+                                var genericsBase = (context.CurrentChar == ',') && 
+	                                    context.CurrentScope.IsRoot &&
+										!context.CurrentScope.IsGenericType &&
+										!context.CurrentScope.HasGenericsArgument;
 
-                            context.CurrentScope.Name.End = context.CurrentPos;
+								if (!genericsBase)
+									throw context.DefaultError();
+							}
+
+							context.CurrentScope.Name.End = context.CurrentPos;
 
                             var genericsArgsCount = ParseGenericsArgsCount(context);
 

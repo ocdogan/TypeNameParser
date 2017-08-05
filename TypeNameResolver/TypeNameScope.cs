@@ -245,7 +245,7 @@ namespace TypeNameResolver
 
 		#region Append Name Methods
 
-		public void AppendAssemblyQualifiedName(StringBuilder sBuilder)
+		internal void AppendAssemblyQualifiedName(StringBuilder sBuilder)
 		{
 			var hasAssembly = (AssemblyName != null) && !AssemblyName.IsEmpty;
 			if (hasAssembly && !IsRoot)
@@ -257,24 +257,29 @@ namespace TypeNameResolver
 
 			if (IsGenericType)
 			{
-				sBuilder.Append('[');
+				var genericsBase = IsRoot && IsGenericType && !HasGenericsArgument;
 
-				var genericsArgsCount = GenericsArguments != null ? GenericsArguments.Count : 0;
+                if (!genericsBase)
+                {
+                    sBuilder.Append('[');
 
-				for (var i = 0; i < ExpectedGenericsArgsCount; i++)
-				{
-					if (i > 0)
-					{
-						sBuilder.Append(",");
-					}
+                    var genericsArgsCount = GenericsArguments != null ? GenericsArguments.Count : 0;
 
-					if (i < genericsArgsCount)
-					{
-						GenericsArguments[i].AppendAssemblyQualifiedName(sBuilder);
-					}
-				}
+                    for (var i = 0; i < ExpectedGenericsArgsCount; i++)
+                    {
+                        if (i > 0)
+                        {
+                            sBuilder.Append(",");
+                        }
 
-				sBuilder.Append(']');
+                        if (i < genericsArgsCount)
+                        {
+                            ((TypeNameScope)GenericsArguments[i]).AppendAssemblyQualifiedName(sBuilder);
+                        }
+                    }
+
+                    sBuilder.Append(']');
+                }
 			}
 
 			if (hasAssembly)
@@ -298,7 +303,7 @@ namespace TypeNameResolver
 			}
 		}
 
-		public void AppendFullName(StringBuilder sBuilder)
+		internal void AppendFullName(StringBuilder sBuilder)
 		{
 			var hasAssembly = (AssemblyName != null) && !AssemblyName.IsEmpty;
 			if (hasAssembly && !IsRoot)
@@ -323,7 +328,7 @@ namespace TypeNameResolver
 
 					if (i < genericsArgsCount)
 					{
-						GenericsArguments[i].AppendFullName(sBuilder);
+                        ((TypeNameScope)GenericsArguments[i]).AppendFullName(sBuilder);
 					}
 				}
 
@@ -348,7 +353,7 @@ namespace TypeNameResolver
 			}
 		}
 
-		public void AppendShortName(StringBuilder sBuilder)
+		internal void AppendShortName(StringBuilder sBuilder)
 		{
 			sBuilder.Append(Name != null ? Name.Text : String.Empty);
 
@@ -367,7 +372,7 @@ namespace TypeNameResolver
 
 					if (i < genericsArgsCount)
 					{
-						GenericsArguments[i].AppendShortName(sBuilder);
+                        ((TypeNameScope)GenericsArguments[i]).AppendShortName(sBuilder);
 					}
 				}
 
@@ -376,6 +381,11 @@ namespace TypeNameResolver
 		}
 
 		#endregion Append Name Methods
+
+        public Type ResolveType()
+        {
+            return null;
+        }
 
 		#region ToString
 

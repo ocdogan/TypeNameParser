@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace TypeNameResolver
@@ -32,9 +33,8 @@ namespace TypeNameResolver
 		ITypeNameBlock PublicKeyToken { get; }
 
 		int IndexOf(ITypeNameScope child);
-		void AppendAssemblyQualifiedName(StringBuilder sBuilder);
-		void AppendFullName(StringBuilder sBuilder);
-		void AppendShortName(StringBuilder sBuilder);
+
+        Type ResolveType();
 	}
 
 	#endregion ITypeNameScope

@@ -29,6 +29,13 @@ namespace TypeNameParserTest
 		private static Type[] GetTypesToTest()
 		{
 			return new Type[] {
+				typeof(L<>),
+				typeof(D<,>),
+				typeof(List<>),
+                typeof(Stack<>),
+				typeof(Dictionary<,>),
+                typeof(Tuple<,,>),
+
 				typeof(St),
 				typeof(Ln),
 				typeof(L<St>),
@@ -178,7 +185,7 @@ namespace TypeNameParserTest
 				typeof(Tuple<decimal, Dictionary<Dictionary<List<short>, Dictionary<Int64[], Stack<Dictionary<Int32, List<string[][,]>>>>>, StringBuilder>, double>),
 				typeof(Tuple<decimal, Dictionary<Dictionary<List<short>, Dictionary<Int64[], Stack<Dictionary<Int32, List<string[][,][]>>>>>, StringBuilder>, double>),
 				typeof(Tuple<decimal, Dictionary<Dictionary<List<short>, Dictionary<Int64[], Stack<Dictionary<Int32, List<string[][,][,]>>>>>, StringBuilder>, double>),
-			};
+            };
 		}
 	}
 }
