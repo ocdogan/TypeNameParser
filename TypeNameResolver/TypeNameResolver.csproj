@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{A660ECE3-8285-4B38-977D-78E230D44C47}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>TypeNameResolver</RootNamespace>
+    <AssemblyName>TypeNameParser</AssemblyName>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TypeNameParser.cs" />
+    <Compile Include="TypeNameToken.cs" />
+    <Compile Include="TypeNameBlockType.cs" />
+    <Compile Include="TypeNameException.cs" />
+    <Compile Include="IStringView.cs" />
+    <Compile Include="ITypeNameBlock.cs" />
+    <Compile Include="ITypeNameScope.cs" />
+    <Compile Include="TypeNameParseTrace.cs" />
+    <Compile Include="IStackT.cs" />
+    <Compile Include="TypeNameParseResult.cs" />
+    <Compile Include="ReadonlyStack.cs" />
+    <Compile Include="StringView.cs" />
+    <Compile Include="TypeNameBlock.cs" />
+    <Compile Include="TypeNameScope.cs" />
+    <Compile Include="ParseContext.cs" />
+    <Compile Include="TypeNameError.cs" />
+    <Compile Include="TypeNameParserCommon.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+</Project>
