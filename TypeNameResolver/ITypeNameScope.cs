@@ -34,7 +34,7 @@ namespace TypeNameResolver
 
 		int IndexOf(ITypeNameScope child);
 
-        Type ResolveType();
+        Type ResolveType(bool throwOnError, bool ignoreCase);
 	}
 
 	#endregion ITypeNameScope

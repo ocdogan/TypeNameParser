@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace TypeNameResolver
@@ -382,9 +383,80 @@ namespace TypeNameResolver
 
 		#endregion Append Name Methods
 
-        public Type ResolveType()
+        public Type ResolveType(bool throwOnError = false, bool ignoreCase = false)
         {
-            return null;
+            var type = Type.GetType(AssemblyQualifiedName, 
+            (assemblyName) => { 
+                return AppDomain.CurrentDomain.GetAssemblies()
+                                .FirstOrDefault(asm => String.Compare(asm.GetName().Name, assemblyName.Name, ignoreCase) == 0); 
+            }, 
+            (assembly, typeName, ignoreCase2) => {
+                var tn = typeName;
+                var ns = (string)null;
+			    
+                var li = typeName.LastIndexOf('.');
+                if (li > -1)
+                {
+                    ns = typeName.Substring(0, li);
+                    tn = typeName.Substring(li + 1);
+                }
+
+				if (assembly != null)
+                {
+					return assembly.GetTypes().FirstOrDefault(t =>
+						String.Compare(tn, t.Name, ignoreCase2) == 0 &&
+						String.Compare(ns, t.Namespace, ignoreCase2) == 0);
+                }
+
+                if (ns != null)
+                {
+                    var possibileAsmNames = new List<string>();
+                    possibileAsmNames.Add("mscorlib");
+
+                    var nsParts = ns.Split('.');
+                    if (nsParts.Length == 1)
+                    {
+						possibileAsmNames.Add(nsParts[0]);
+					}
+                    else
+                    {
+                        var asmName = String.Empty;
+                        var possibilities = nsParts
+                            .Select(part =>
+                            {
+                                asmName += "." + part;
+                                return asmName.Substring(1);
+                            });
+
+                        possibileAsmNames.AddRange(possibilities);
+                    }
+
+                    var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+                    var possibleType = assemblies
+                        .Where(asm => possibileAsmNames.Contains(asm.GetName().Name, ignoreCase2 ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal))
+                        .Select(asm => asm.GetTypes()
+                                .FirstOrDefault(t => String.Compare(tn, t.Name, ignoreCase2) == 0 && String.Compare(ns, t.Namespace, ignoreCase2) == 0))
+                        .FirstOrDefault();
+
+                    if (possibleType != null)
+                        return possibleType;
+
+                    return assemblies.Select(asm => asm.GetTypes()
+                                  .FirstOrDefault(t => String.Compare(tn, t.Name, ignoreCase2) == 0 &&
+                                                String.Compare(ns, t.Namespace, ignoreCase2) == 0)
+                        ).FirstOrDefault();
+                }
+
+                return null; 
+            }, throwOnError, ignoreCase);
+
+            if (type == null)
+            {
+                
+            }
+
+            return type;
         }
 
 		#region ToString
