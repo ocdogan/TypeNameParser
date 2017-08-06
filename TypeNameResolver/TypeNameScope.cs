@@ -402,13 +402,13 @@ namespace TypeNameResolver
             var cache = (ignoreCase ? s_TypeCache : s_OrdinalTypeCache);
 
             if (cache.TryGetValue(aqn, out m_Type) && m_Type != null)
-				return m_Type;
-			
+                return m_Type;
+
             m_Type = Type.GetType(aqn,
             (assemblyName) =>
             {
 				var assemblies = AppDomain.CurrentDomain.GetAssemblies()
-							  .ToDictionary(a => ignoreCase ? a.GetName().Name.ToLowerInvariant() : a.GetName().Name);
+                              .ToDictionary(a => ignoreCase ? a.GetName().Name.ToLowerInvariant() : a.GetName().Name);
 
                 var assembly = (Assembly)null;
                 assemblies.TryGetValue(ignoreCase ? assemblyName.Name.ToLowerInvariant() : assemblyName.Name, out assembly);
@@ -416,13 +416,13 @@ namespace TypeNameResolver
             },
             (assembly, typeName, ignoreCase2) =>
             {
-				Type type;
+                Type type;
                 if (assembly != null)
                 {
-					var tAqn = typeName + ", " + assembly.GetName().Name;
+                    var tAqn = typeName + ", " + assembly.GetName().Name;
                     if (cache.TryGetValue(tAqn, out type) && type != null)
                         return type;
-                    
+
                     type = assembly.GetType(typeName, throwOnError, ignoreCase);
                     if (type != null)
                     {
@@ -432,10 +432,10 @@ namespace TypeNameResolver
                     return type;
                 }
 
-				if (cache.TryGetValue(aqn, out type) && type != null)
-					return type;
+                if (cache.TryGetValue(aqn, out type) && type != null)
+                    return type;
 
-				var tn = typeName;
+                var tn = typeName;
                 var ns = (string)null;
 
                 var nsEmpty = true;
@@ -448,15 +448,16 @@ namespace TypeNameResolver
                     nsEmpty = String.IsNullOrEmpty(ns);
                 }
 
-				var assemblies = AppDomain.CurrentDomain.GetAssemblies()
-							  .ToDictionary(a => ignoreCase ? a.GetName().Name.ToLowerInvariant() : a.GetName().Name);
+                var assemblies = AppDomain.CurrentDomain.GetAssemblies()
+                              .ToDictionary(a => ignoreCase ? a.GetName().Name.ToLowerInvariant() : a.GetName().Name);
 
-				if (!nsEmpty)
+                if (!nsEmpty)
                 {
                     var mscorlib = typeof(bool).Assembly.GetName();
-
-                    var possibileAssemblyNames = new List<string>();
-                    possibileAssemblyNames.Add(ignoreCase2 ? mscorlib.Name.ToLowerInvariant() : mscorlib.Name);
+                    var possibileAssemblyNames = new List<string>
+                    {
+                        ignoreCase2 ? mscorlib.Name.ToLowerInvariant() : mscorlib.Name
+                    };
 
                     var possibleAssemblyName = String.Empty;
                     var possibilities = ns.Split('.')
@@ -476,8 +477,8 @@ namespace TypeNameResolver
                     if (possibleType != null)
                     {
                         s_TypeCache[typeName] = possibleType;
-						s_OrdinalTypeCache[typeName] = possibleType;
-						
+                        s_OrdinalTypeCache[typeName] = possibleType;
+
                         return possibleType;
                     }
 
@@ -504,28 +505,28 @@ namespace TypeNameResolver
                     var t = asm.GetType(typeName, false, ignoreCase2);
                     if (nsEmpty && (t == null))
                     {
-                        t = asm.GetTypes().Where(t2 => String.IsNullOrEmpty(t2.Namespace) &&
-                                                   ignoreCase2 ? 
+                        t = asm.GetTypes().FirstOrDefault(t2 => String.IsNullOrEmpty(t2.Namespace) &&
+                                                   ignoreCase2 ?
                                                    String.Compare(t2.Name, tn, StringComparison.OrdinalIgnoreCase) == 0 :
-                                                   String.CompareOrdinal(t2.Name, tn) == 0).FirstOrDefault();
+                                                   String.CompareOrdinal(t2.Name, tn) == 0);
                     }
-					return t;
+                    return t;
                 })
                 .FirstOrDefault(t => t != null);
 
                 if (type != null)
-				{
-					s_TypeCache[typeName] = type;
-					s_OrdinalTypeCache[typeName] = type;
-				}
+                {
+                    s_TypeCache[typeName] = type;
+                    s_OrdinalTypeCache[typeName] = type;
+                }
 
-				return type;
+                return type;
             }, throwOnError, ignoreCase);
 
-			if (throwOnError && m_Type == null)
-				throw new TypeLoadException(String.Format("Type '{0}' cannot be found", aqn));
+            if (throwOnError && m_Type == null)
+                throw new TypeLoadException(String.Format("Type '{0}' cannot be found", aqn));
 
-			return m_Type;
+            return m_Type;
         }
 
 		#region ToString
