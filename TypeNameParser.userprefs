@@ -1,8 +1,9 @@
 ﻿<Properties StartupConfiguration="{97678F01-351F-4016-AE1B-1100C6FA80CA}|Default">
-  <MonoDevelop.Ide.Workbench ActiveDocument="TypeNameResolver/TypeNameParser.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="TypeNameParserTest/Program.GeneralTests.cs">
     <Files>
-      <File FileName="TypeNameResolver/TypeNameScope.cs" Line="639" Column="1" />
-      <File FileName="TypeNameResolver/TypeNameParser.cs" Line="18" Column="2" />
+      <File FileName="TypeNameResolver/TypeNameScope.cs" Line="509" Column="31" />
+      <File FileName="TypeNameResolver/TypeNameParser.cs" Line="58" Column="19" />
+      <File FileName="TypeNameParserTest/Program.GeneralTests.cs" Line="142" Column="29" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|x86" />

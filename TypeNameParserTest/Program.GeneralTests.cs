@@ -155,10 +155,10 @@ namespace TypeNameParserTest
                     break;
             }
 
-            return TestType(typeName, selectedTestMethod, currentTestNo);
+            return TestType(typeToTest, typeName, selectedTestMethod, currentTestNo);
         }
 
-        private static bool TestType(string typeName, TestMethod selectedTestMethod, int currentTestNo)
+        private static bool TestType(Type typeToTest, string typeName, TestMethod selectedTestMethod, int currentTestNo)
         {
             var testMethodName = selectedTestMethod.ToString("F");
 
@@ -228,7 +228,7 @@ namespace TypeNameParserTest
 
                 var type = (result.Scope != null) ? result.Scope.ResolveType(false, true) : null;
 
-                passed = type != null;
+                passed = (type != null && type == typeToTest);
                 if (passed)
 				{
 					Console.ForegroundColor = ConsoleColor.Green;
