@@ -64,7 +64,7 @@ namespace TypeNameResolver
 			m_Text = text;
 			m_TextLen = (text != null ? text.Length : 0);
 
-			m_Root = new TypeNameScope(m_Id++, m_Text, true);
+			m_Root = new TypeNameScope(m_Id++, m_Text);
 			m_Stack.Push(m_Root);
 
 			m_CurrentScope = m_Root;

@@ -37,11 +37,10 @@ namespace TypeNameResolver
 
 		#region .Ctors
 
-		public TypeNameScope(int id, string text, bool isRoot = false, int genericsArgsCount = -1)
+		public TypeNameScope(int id, string text, int genericsArgsCount = -1)
 		{
 			Id = id;
 			m_Text = text;
-			IsRoot = isRoot;
 			if (genericsArgsCount > -1)
 			{
 				ExpectedGenericsArgsCount = genericsArgsCount;
@@ -168,7 +167,10 @@ namespace TypeNameResolver
 			get { return m_ExpectedGenericsArgsCount > 0; }
 		}
 
-		public bool IsRoot { get; private set; }
+        public bool IsRoot 
+        { 
+            get { return Parent == null; }
+        }
 
 		public int NameBlockDepth
 		{
@@ -225,6 +227,7 @@ namespace TypeNameResolver
 		    m_AQName = null;
 		    m_FullName = null;
 		    m_ShortName = null;
+            m_NameWithAssembly = null;
 	    }
 
 		public bool CanAddGenericsArgument()

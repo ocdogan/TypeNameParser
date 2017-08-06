@@ -1,14 +1,12 @@
 ﻿<Properties StartupConfiguration="{97678F01-351F-4016-AE1B-1100C6FA80CA}|Default">
   <MonoDevelop.Ide.Workbench ActiveDocument="TypeNameResolver/TypeNameScope.cs">
     <Files>
-      <File FileName="TypeNameResolver/TypeNameScope.cs" Line="18" Column="9" />
+      <File FileName="TypeNameResolver/TypeNameScope.cs" Line="173" Column="9" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|x86" />
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
-    <BreakpointStore>
-      <Breakpoint file="/Users/rados82/Projects/GitRep/TypeNameParser/TypeNameResolver/TypeNameScope.cs" relfile="TypeNameResolver/TypeNameScope.cs" line="398" column="1" />
-    </BreakpointStore>
+    <BreakpointStore />
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
   <MonoDevelop.Ide.ItemProperties.TypeNameTest PreferredExecutionTarget="MonoDevelop.Default" />
