@@ -218,14 +218,28 @@ namespace TypeNameParserTest
                 if (passed)
                 {
                     Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine("PASSED");
+                    Console.WriteLine("PARSING PASSED");
                 }
                 else
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("FAILED !!!");
+                    Console.WriteLine("PARSING FAILED !!!");
                 }
-            }
+
+                var type = (result.Scope != null) ? result.Scope.ResolveType(false, true) : null;
+
+                passed = type != null;
+                if (passed)
+				{
+					Console.ForegroundColor = ConsoleColor.Green;
+					Console.WriteLine("RESOLVE PASSED");
+				}
+				else
+				{
+					Console.ForegroundColor = ConsoleColor.Red;
+					Console.WriteLine("RESOLVE FAILED !!!");
+				}
+			}
             finally
             {
                 Console.ForegroundColor = fgColor;

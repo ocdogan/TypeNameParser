@@ -2,26 +2,6 @@
 using System.Collections.Generic;
 using System.Text;
 
-#region Test classes without namespace
-
-public class D<T, K> { }
-
-public class L<T> { }
-
-public class S<T> { }
-
-public class St { }
-
-public class Sh { }
-
-public class I { }
-
-public class Ln { }
-
-public class Sb { }
-
-#endregion Test classes without namespace
-
 namespace TypeNameParserTest
 {
     public partial class MainClass

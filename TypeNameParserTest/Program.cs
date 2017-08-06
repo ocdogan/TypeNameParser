@@ -10,8 +10,7 @@ namespace TypeNameParserTest
     {
         public static void Main(string[] args)
         {
-            GeneralTypeNameParserTests();
+			GeneralTypeNameParserTests();
         }
-
     }
 }
