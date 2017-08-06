@@ -16,16 +16,22 @@ namespace TypeNameResolver
         private static readonly ConcurrentDictionary<string, Type> s_OrdinalTypeCache = new ConcurrentDictionary<string, Type>();
         private static readonly ConcurrentDictionary<string, Type> s_TypeCache = new ConcurrentDictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
 
-		#endregion Static Members
+        #endregion Static Members
 
-		#region Field Members
+        #region Field Members
 
 		private Type m_Type;
 		private string m_Text;
 		private bool m_InBlock;
+		private bool m_IsArray;
 		private int m_NameBlockDepth;
 		private int m_ExpectedGenericsArgsCount = -1;
 		private int m_GenericsBlockDepth;
+
+        private string m_AQName;
+		private string m_FullName;
+        private string m_ShortName;
+		private string m_NameWithAssembly;
 
 		#endregion Field Members
 
@@ -58,10 +64,14 @@ namespace TypeNameResolver
 		public string AssemblyQualifiedName
 		{
 			get
-			{
-				var sBuilder = new StringBuilder(200);
-				AppendAssemblyQualifiedName(sBuilder);
-				return sBuilder.ToString();
+            {
+                if (m_AQName == null)
+                {
+                    var sBuilder = new StringBuilder(200);
+                    AppendAssemblyQualifiedName(sBuilder);
+                    m_AQName = sBuilder.ToString();
+                }
+                return m_AQName;
 			}
 		}
 
@@ -85,9 +95,13 @@ namespace TypeNameResolver
 		{
 			get
 			{
-				var sBuilder = new StringBuilder(200);
-				AppendFullName(sBuilder);
-				return sBuilder.ToString();
+                if (m_FullName == null)
+                {
+                    var sBuilder = new StringBuilder(200);
+                    AppendFullName(sBuilder);
+                    m_FullName = sBuilder.ToString();
+                }
+                return m_FullName;
 			}
 		}
 
@@ -131,7 +145,18 @@ namespace TypeNameResolver
 			}
 		}
 
-		public bool IsArray { get; set; }
+		public bool IsArray
+        {
+            get { return m_IsArray; }
+            set
+            {
+                if (m_IsArray != value && !IsGenericType)
+                {
+                    m_IsArray = value;
+                    ClearNameCache();
+                }
+            }
+        }
 
 		public bool IsGenericArgument
 		{
@@ -163,19 +188,44 @@ namespace TypeNameResolver
 			}
 		}
 
+		public string NameWithAssembly
+		{
+			get
+			{
+				if (m_NameWithAssembly == null)
+				{
+					var sBuiler = new StringBuilder(200);
+					AppendNameWithAssembly(sBuiler);
+					m_NameWithAssembly = sBuiler.ToString();
+				}
+				return m_NameWithAssembly;
+			}
+		}
+
 		public string ShortName
 		{
 			get
 			{
-				var sBuilder = new StringBuilder(200);
-				AppendShortName(sBuilder);
-				return sBuilder.ToString();
+                if (m_ShortName == null)
+                {
+                    var sBuilder = new StringBuilder(200);
+                    AppendShortName(sBuilder);
+                    m_ShortName = sBuilder.ToString();
+                }
+                return m_ShortName;
 			}
 		}
 
 		#endregion Properties
 
 		#region Methods
+
+        private void ClearNameCache()
+        {
+		    m_AQName = null;
+		    m_FullName = null;
+		    m_ShortName = null;
+	    }
 
 		public bool CanAddGenericsArgument()
 		{
@@ -190,6 +240,8 @@ namespace TypeNameResolver
 
 			GenericsArguments.Add(argument);
 			argument.Parent = this;
+
+            ClearNameCache();
 		}
 
 		public void SetName(int start, int length = -1)
@@ -198,6 +250,8 @@ namespace TypeNameResolver
 				throw TypeNameParserCommon.NewError(TypeNameError.TypeNameAlreadyDefined, m_Text, -1, TypeNameToken.TypeName);
 
 			Name = new TypeNameBlock(m_Text, TypeNameBlockType.TypeName, start, length);
+
+			ClearNameCache();
 		}
 
 		public void SetAssemblyName(int start, int length = -1)
@@ -206,6 +260,8 @@ namespace TypeNameResolver
 				throw TypeNameParserCommon.NewError(TypeNameError.AssemblyNameAlreadyDefined, m_Text, -1, TypeNameToken.AssemblyName);
 
 			AssemblyName = new TypeNameBlock(m_Text, TypeNameBlockType.AssemblyName, start, length);
+
+			ClearNameCache();
 		}
 
 		public void SetVersion(int start, int length = -1)
@@ -217,6 +273,8 @@ namespace TypeNameResolver
 				throw TypeNameParserCommon.NewError(TypeNameError.CannotDefineVersionBeforeAssemblyName, m_Text, -1, TypeNameToken.Version);
 
 			Version = new TypeNameBlock(m_Text, TypeNameBlockType.Version, start, length);
+
+			ClearNameCache();
 		}
 
 		public void SetCulture(int start, int length = -1)
@@ -228,6 +286,8 @@ namespace TypeNameResolver
 				throw TypeNameParserCommon.NewError(TypeNameError.CannotDefineCultureBeforeAssemblyName, m_Text, -1, TypeNameToken.Culture);
 
 			Culture = new TypeNameBlock(m_Text, TypeNameBlockType.Culture, start, length);
+
+			ClearNameCache();
 		}
 
 		public void SetPublicKeyToken(int start, int length = -1)
@@ -239,6 +299,8 @@ namespace TypeNameResolver
 				throw TypeNameParserCommon.NewError(TypeNameError.CannotDefinePublicKeyTokenBeforeAssemblyName, m_Text, -1, TypeNameToken.PublicKeyToken);
 
 			PublicKeyToken = new TypeNameBlock(m_Text, TypeNameBlockType.PublicKeyToken, start, length);
+
+			ClearNameCache();
 		}
 
 		public int IndexOf(ITypeNameScope child)
@@ -391,9 +453,58 @@ namespace TypeNameResolver
 			}
 		}
 
-        #endregion Append Name Methods
+        internal void AppendNameWithAssembly(StringBuilder sBuilder)
+		{
+			var hasAssembly = (AssemblyName != null) && !AssemblyName.IsEmpty;
+			if (hasAssembly && !IsRoot)
+			{
+				sBuilder.Append('[');
+			}
 
-        public Type ResolveType(bool throwOnError = false, bool ignoreCase = false)
+			sBuilder.Append(Name != null ? Name.Text : String.Empty);
+
+			if (IsGenericType)
+			{
+				var genericsBase = IsRoot && IsGenericType && !HasGenericsArgument;
+
+				if (!genericsBase)
+				{
+					sBuilder.Append('[');
+
+					var genericsArgsCount = GenericsArguments != null ? GenericsArguments.Count : 0;
+
+					for (var i = 0; i < ExpectedGenericsArgsCount; i++)
+					{
+						if (i > 0)
+						{
+							sBuilder.Append(",");
+						}
+
+						if (i < genericsArgsCount)
+						{
+							((TypeNameScope)GenericsArguments[i]).AppendNameWithAssembly(sBuilder);
+						}
+					}
+
+					sBuilder.Append(']');
+				}
+			}
+
+			if (hasAssembly)
+			{
+				sBuilder.Append(", ");
+				sBuilder.Append(AssemblyName.Text);
+			}
+
+			if (hasAssembly && !IsRoot)
+			{
+				sBuilder.Append(']');
+			}
+		}
+
+		#endregion Append Name Methods
+
+		public Type ResolveType(bool throwOnError = false, bool ignoreCase = false)
         {
             if (m_Type != null)
                 return m_Type;
@@ -401,7 +512,8 @@ namespace TypeNameResolver
             var aqn = AssemblyQualifiedName;
             var cache = (ignoreCase ? s_TypeCache : s_OrdinalTypeCache);
 
-            if (cache.TryGetValue(aqn, out m_Type) && m_Type != null)
+            var cacheKey = NameWithAssembly;
+            if (cache.TryGetValue(cacheKey, out m_Type) && m_Type != null)
                 return m_Type;
 
             m_Type = Type.GetType(aqn,
@@ -525,6 +637,12 @@ namespace TypeNameResolver
 
             if (throwOnError && m_Type == null)
                 throw new TypeLoadException(String.Format("Type '{0}' cannot be found", aqn));
+
+            if (m_Type != null)
+            {
+                s_TypeCache[cacheKey] = m_Type;
+                s_OrdinalTypeCache[cacheKey] = m_Type;
+            }
 
             return m_Type;
         }
