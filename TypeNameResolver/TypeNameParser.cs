@@ -1,9 +1,8 @@
 ﻿﻿using System;
-using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
+using System.Reflection;
 
 namespace TypeNameResolver
 {
@@ -13,11 +12,155 @@ namespace TypeNameResolver
 
         private const int MaxAllowedGenericsCountCharLength = 3;
 
-        #endregion Constants
+		#endregion Constants
 
-        #region Parse Methods
+		#region Static Members
 
-        public static TypeNameParseResult Parse(string str, bool debug = false)
+        private static readonly ConcurrentDictionary<string, Type> s_OrdinalTypeNameCache = new ConcurrentDictionary<string, Type>();
+        private static readonly ConcurrentDictionary<string, Type> s_TypeNameCache = new ConcurrentDictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
+
+		#endregion Static Members
+
+		#region Resolve Methods
+
+		internal static void AddToTypeNameCache(string typeName, Type type)
+		{
+			s_TypeNameCache[typeName] = type;
+			s_OrdinalTypeNameCache[typeName] = type;
+		}
+		
+        internal static ConcurrentDictionary<string, Type> GetTypeNameCache(bool ignoreCase)
+        {
+            return (ignoreCase ? s_TypeNameCache : s_OrdinalTypeNameCache);
+        }
+
+        public static Type ResolveType(string typeToResolve, bool throwOnError = false, bool ignoreCase = false)
+		{
+			var cache = GetTypeNameCache(ignoreCase);
+
+			var result = Type.GetType(typeToResolve,
+			(assemblyName) =>
+			{
+				var assemblies = AppDomain.CurrentDomain.GetAssemblies()
+							  .ToDictionary(a => ignoreCase ? a.GetName().Name.ToLowerInvariant() : a.GetName().Name);
+
+				var assembly = (Assembly)null;
+				assemblies.TryGetValue(ignoreCase ? assemblyName.Name.ToLowerInvariant() : assemblyName.Name, out assembly);
+				return assembly;
+			},
+			(assembly, typeName, ignoreCase2) =>
+			{
+				Type type;
+				if (assembly != null)
+				{
+                    var cacheKey = typeName + ", " + assembly.GetName().Name;
+					if (cache.TryGetValue(cacheKey, out type) && type != null)
+						return type;
+
+					type = assembly.GetType(typeName, throwOnError, ignoreCase);
+					if (type != null)
+					    AddToTypeNameCache(cacheKey, type);
+
+                    return type;
+				}
+
+				if (cache.TryGetValue(typeToResolve, out type) && type != null)
+					return type;
+
+				var tn = typeName;
+				var ns = (string)null;
+
+				var nsEmpty = true;
+				var li = typeName.LastIndexOf('.');
+				if (li > -1)
+				{
+					ns = typeName.Substring(0, li);
+					tn = typeName.Substring(li + 1);
+
+					nsEmpty = String.IsNullOrEmpty(ns);
+				}
+
+				var assemblies = AppDomain.CurrentDomain.GetAssemblies()
+							  .ToDictionary(a => ignoreCase ? a.GetName().Name.ToLowerInvariant() : a.GetName().Name);
+
+				if (!nsEmpty)
+				{
+					var mscorlib = typeof(bool).Assembly.GetName();
+					var possibileAssemblyNames = new List<string>
+					{
+						ignoreCase2 ? mscorlib.Name.ToLowerInvariant() : mscorlib.Name
+					};
+
+					var possibleAssemblyName = String.Empty;
+					var possibilities = ns.Split('.')
+						.Select(part =>
+						{
+							possibleAssemblyName += "." + (ignoreCase2 ? part.ToLowerInvariant() : part);
+							return possibleAssemblyName.Substring(1);
+						});
+
+					possibileAssemblyNames.AddRange(possibilities);
+
+					type = possibileAssemblyNames
+						.Where(name => assemblies.ContainsKey(name))
+						.Select(name => assemblies[name].GetType(typeName, false, ignoreCase2))
+						.FirstOrDefault(t => t != null);
+
+					if (type != null)
+					{
+						AddToTypeNameCache(typeName, type);
+						return type;
+					}
+
+					possibileAssemblyNames.ForEach(name =>
+					{
+						if (assemblies.ContainsKey(name))
+							assemblies.Remove(name);
+					});
+				}
+
+				if (nsEmpty)
+				{
+					assemblies = assemblies.Where(kvp =>
+									 !(String.Compare(kvp.Key, "mscorlib", ignoreCase2 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) == 0 ||
+									   String.Compare(kvp.Key, "system", ignoreCase2 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) == 0 ||
+									   kvp.Key.StartsWith("system.", ignoreCase2 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+									).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+				}
+
+				type = assemblies.Select(kvp =>
+				{
+					var asm = kvp.Value;
+
+					var t = asm.GetType(typeName, false, ignoreCase2);
+					if (nsEmpty && (t == null))
+					{
+						t = asm.GetTypes().FirstOrDefault(t2 => String.IsNullOrEmpty(t2.Namespace) &&
+												   ignoreCase2 ?
+												   String.Compare(t2.Name, tn, StringComparison.OrdinalIgnoreCase) == 0 :
+												   String.CompareOrdinal(t2.Name, tn) == 0);
+					}
+					return t;
+				})
+				.FirstOrDefault(t => t != null);
+
+				if (type != null)
+                    AddToTypeNameCache(typeName, type);
+
+				return type;
+			}, throwOnError, ignoreCase);
+
+			if (throwOnError && result == null)
+				throw new TypeLoadException(String.Format("Type '{0}' cannot be found", typeToResolve));
+
+			return result;
+		}
+
+		#endregion Resolve Methods
+
+		#region Parse Methods
+
+		public static TypeNameParseResult Parse(string str, bool debug = false)
         {
 			if (String.IsNullOrEmpty(str))
 				throw TypeNameParserCommon.NewError(TypeNameError.InvalidTypeName, str, 0, TypeNameToken.Undefined);
