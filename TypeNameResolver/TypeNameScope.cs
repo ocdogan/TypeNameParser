@@ -10,7 +10,7 @@ namespace TypeNameResolver
 	{
         #region Field Members
 
-		private Type m_Type;
+        private Type m_Type;
 		private string m_Text;
 		private bool m_InBlock;
 		private bool m_IsArray;
@@ -22,6 +22,14 @@ namespace TypeNameResolver
 		private string m_FullName;
         private string m_ShortName;
 		private string m_NameWithAssembly;
+
+        private TypeNameBlock m_Name;
+        private TypeNameBlock m_AssemblyName;
+        private TypeNameBlock m_Version;
+        private TypeNameBlock m_PublicKeyToken;
+        private TypeNameBlock m_Culture;
+
+        private TypeNameScope m_Parent;
 
 		#endregion Field Members
 
@@ -41,13 +49,36 @@ namespace TypeNameResolver
 
 		#region Properties
 
-		public ITypeNameBlock Name { get; private set; }
-		public ITypeNameBlock AssemblyName { get; private set; }
-		public ITypeNameBlock Version { get; private set; }
-		public ITypeNameBlock PublicKeyToken { get; private set; }
-		public ITypeNameBlock Culture { get; private set; }
+        public ITypeNameBlock Name 
+        { 
+            get { return m_Name; } 
+        }
 
-		public ITypeNameScope Parent { get; private set; }
+        public ITypeNameBlock AssemblyName 
+        { 
+            get { return m_AssemblyName; } 
+        }
+
+        public ITypeNameBlock Version 
+        { 
+            get { return m_Version; } 
+        }
+
+        public ITypeNameBlock PublicKeyToken 
+        { 
+            get { return m_PublicKeyToken; } 
+        }
+
+        public ITypeNameBlock Culture 
+        { 
+            get { return m_Culture; } 
+        }
+
+		public ITypeNameScope Parent
+        {
+            get { return m_Parent; }
+        }
+
 		public List<ITypeNameScope> GenericsArguments { get; private set; }
 
 		public string AssemblyQualifiedName
@@ -142,7 +173,7 @@ namespace TypeNameResolver
                 if (m_IsArray != value && !IsGenericType)
                 {
                     m_IsArray = value;
-                    ClearNameCache();
+                    ScopeChanged(this, EventArgs.Empty);
                 }
             }
         }
@@ -159,7 +190,7 @@ namespace TypeNameResolver
 
         public bool IsRoot 
         { 
-            get { return Parent == null; }
+            get { return m_Parent == null; }
         }
 
 		public int NameBlockDepth
@@ -232,68 +263,82 @@ namespace TypeNameResolver
 				throw TypeNameParserCommon.NewError(TypeNameError.GenericsArgumentsCountExceeded, m_Text, -1, TypeNameToken.Undefined);
 
 			GenericsArguments.Add(argument);
-			argument.Parent = this;
+			argument.m_Parent = this;
 
+            ScopeChanged(this, EventArgs.Empty);
+		}
+
+        protected void ScopeChanged(object sender, EventArgs e)
+		{
             ClearNameCache();
+            if (m_Parent != null)
+            {
+                m_Parent.ScopeChanged(sender, e);
+            }
 		}
 
 		public void SetName(int start, int length = -1)
 		{
-			if (Name != null)
+			if (m_Name != null)
 				throw TypeNameParserCommon.NewError(TypeNameError.TypeNameAlreadyDefined, m_Text, -1, TypeNameToken.TypeName);
 
-			Name = new TypeNameBlock(m_Text, TypeNameBlockType.TypeName, start, length);
+			m_Name = new TypeNameBlock(m_Text, TypeNameBlockType.TypeName, start, length);
+            m_Name.Changed += ScopeChanged;
 
-			ClearNameCache();
+			ScopeChanged(this, EventArgs.Empty);
 		}
 
 		public void SetAssemblyName(int start, int length = -1)
 		{
-			if (AssemblyName != null)
+			if (m_AssemblyName != null)
 				throw TypeNameParserCommon.NewError(TypeNameError.AssemblyNameAlreadyDefined, m_Text, -1, TypeNameToken.AssemblyName);
 
-			AssemblyName = new TypeNameBlock(m_Text, TypeNameBlockType.AssemblyName, start, length);
+			m_AssemblyName = new TypeNameBlock(m_Text, TypeNameBlockType.AssemblyName, start, length);
+            m_AssemblyName.Changed += ScopeChanged;
 
-			ClearNameCache();
+			ScopeChanged(this, EventArgs.Empty);
 		}
 
 		public void SetVersion(int start, int length = -1)
 		{
-			if (Version != null)
+			if (m_Version != null)
 				throw TypeNameParserCommon.NewError(TypeNameError.AssemblyVersionAlreadyDefined, m_Text, -1, TypeNameToken.Version);
 
 			if (AssemblyName == null)
 				throw TypeNameParserCommon.NewError(TypeNameError.CannotDefineVersionBeforeAssemblyName, m_Text, -1, TypeNameToken.Version);
 
-			Version = new TypeNameBlock(m_Text, TypeNameBlockType.Version, start, length);
+			m_Version = new TypeNameBlock(m_Text, TypeNameBlockType.Version, start, length);
+            m_Version.Changed += ScopeChanged;
 
-			ClearNameCache();
+			ScopeChanged(this, EventArgs.Empty);
 		}
 
 		public void SetCulture(int start, int length = -1)
 		{
-			if (Culture != null)
+			if (m_Culture != null)
 				throw TypeNameParserCommon.NewError(TypeNameError.AssemblyCultureAlreadyDefined, m_Text, -1, TypeNameToken.Culture);
 
 			if (AssemblyName == null)
 				throw TypeNameParserCommon.NewError(TypeNameError.CannotDefineCultureBeforeAssemblyName, m_Text, -1, TypeNameToken.Culture);
 
-			Culture = new TypeNameBlock(m_Text, TypeNameBlockType.Culture, start, length);
+			m_Culture = new TypeNameBlock(m_Text, TypeNameBlockType.Culture, start, length);
+            m_Culture.Changed += ScopeChanged;
 
-			ClearNameCache();
+			ScopeChanged(this, EventArgs.Empty);
 		}
 
 		public void SetPublicKeyToken(int start, int length = -1)
 		{
-			if (PublicKeyToken != null)
+			if (m_PublicKeyToken != null)
 				throw TypeNameParserCommon.NewError(TypeNameError.AssemblyPublicKeyTokenAlreadyDefined, m_Text, -1, TypeNameToken.PublicKeyToken);
 
 			if (AssemblyName == null)
 				throw TypeNameParserCommon.NewError(TypeNameError.CannotDefinePublicKeyTokenBeforeAssemblyName, m_Text, -1, TypeNameToken.PublicKeyToken);
 
-			PublicKeyToken = new TypeNameBlock(m_Text, TypeNameBlockType.PublicKeyToken, start, length);
+			m_PublicKeyToken = new TypeNameBlock(m_Text, TypeNameBlockType.PublicKeyToken, start, length);
+            m_PublicKeyToken.Changed += ScopeChanged;
 
-			ClearNameCache();
+			ScopeChanged(this, EventArgs.Empty);
 		}
 
 		public int IndexOf(ITypeNameScope child)

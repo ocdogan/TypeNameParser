@@ -15,11 +15,17 @@ namespace TypeNameResolver
 		private int m_End = -1;
 		private bool m_Locked;
 
-		#endregion Field Members
+        #endregion Field Members
 
-		#region .Ctors
+        #region Events
 
-		public StringView(string text, int start = -1, int end = -1, bool locked = false)
+        public event EventHandler Changed;
+
+        #endregion Events
+
+        #region .Ctors
+
+        public StringView(string text, int start = -1, int end = -1, bool locked = false)
 		{
 			Start = start;
 			End = end;
@@ -37,9 +43,13 @@ namespace TypeNameResolver
 			get { return m_Start; }
 			set
 			{
-				if (!m_Locked)
+                if (!m_Locked && m_Start != value)
 				{
 					m_Start = value;
+                    if (Changed != null)
+                    {
+                        Changed(this, EventArgs.Empty);
+                    }
 				}
 			}
 		}
@@ -49,9 +59,13 @@ namespace TypeNameResolver
 			get { return m_End; }
 			set
 			{
-				if (!m_Locked)
+                if (!m_Locked && m_End != value)
 				{
 					m_End = value;
+					if (Changed != null)
+					{
+						Changed(this, EventArgs.Empty);
+					}
 				}
 			}
 		}
