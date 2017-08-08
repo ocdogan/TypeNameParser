@@ -12,14 +12,17 @@ namespace TypeNameResolver
 
         private const int MaxAllowedGenericsCountCharLength = 3;
 
-		#endregion Constants
+        #endregion Constants
 
-		#region Static Members
+        #region Static Members
 
+        private static readonly ConcurrentDictionary<string, ConcurrentDictionary<Assembly, bool>> s_AbsenceCache = 
+            new ConcurrentDictionary<string, ConcurrentDictionary<Assembly, bool>>();
+		
         private static readonly ConcurrentDictionary<string, Type> s_OrdinalTypeNameCache = new ConcurrentDictionary<string, Type>();
         private static readonly ConcurrentDictionary<string, Type> s_TypeNameCache = new ConcurrentDictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
 
-		#endregion Static Members
+        #endregion Static Members
 
 		#region Resolve Methods
 
@@ -64,8 +67,15 @@ namespace TypeNameResolver
                     return type;
 				}
 
-				if (cache.TryGetValue(typeToResolve, out type) && type != null)
+				if (cache.TryGetValue(typeName, out type) && type != null)
 					return type;
+
+                ConcurrentDictionary<Assembly, bool> absence;
+                if (!s_AbsenceCache.TryGetValue(typeName, out absence))
+                {
+                    absence = new ConcurrentDictionary<Assembly, bool>();
+                    s_AbsenceCache[typeName] = absence;
+                }
 
 				var tn = typeName;
 				var ns = (string)null;
@@ -81,6 +91,7 @@ namespace TypeNameResolver
 				}
 
 				var assemblies = AppDomain.CurrentDomain.GetAssemblies()
+                              .Where(a => !absence.ContainsKey(a))
 							  .ToDictionary(a => ignoreCase ? a.GetName().Name.ToLowerInvariant() : a.GetName().Name);
 
 				if (!nsEmpty)
@@ -103,29 +114,47 @@ namespace TypeNameResolver
 
 					type = possibileAssemblyNames
 						.Where(name => assemblies.ContainsKey(name))
-						.Select(name => assemblies[name].GetType(typeName, false, ignoreCase2))
+                        .Select(name => assemblies[name].GetType(typeName, false, ignoreCase2))
 						.FirstOrDefault(t => t != null);
+
+					assemblies
+                        .Select(kvp => kvp.Value)
+						.Where(a => type == null || a != type.Assembly)
+						.ToList()
+						.ForEach(a => absence[a] = true);
 
 					if (type != null)
 					{
 						AddToTypeNameCache(typeName, type);
-						return type;
+                        return type;
 					}
 
-					possibileAssemblyNames.ForEach(name =>
-					{
-						if (assemblies.ContainsKey(name))
-							assemblies.Remove(name);
-					});
+                    possibileAssemblyNames.ForEach(name =>
+                    {
+                        assemblies.Remove(name);
+                    });
 				}
 
 				if (nsEmpty)
 				{
-					assemblies = assemblies.Where(kvp =>
+					var systemAssemblies = assemblies
+                        .Where(kvp =>
+                            String.Compare(kvp.Key, "mscorlib", ignoreCase2 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) == 0 ||
+							String.Compare(kvp.Key, "system", ignoreCase2 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) == 0 ||
+							kvp.Key.StartsWith("system.", ignoreCase2 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+                        .Select(kvp => kvp.Value)
+                        .ToList();
+
+                    systemAssemblies.ForEach(a => {
+                        absence[a] = true;
+                        assemblies.Remove(ignoreCase2 ? a.GetName().Name.ToLowerInvariant() : a.GetName().Name);
+                    });
+
+					/* assemblies = assemblies.Where(kvp =>
 									 !(String.Compare(kvp.Key, "mscorlib", ignoreCase2 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) == 0 ||
 									   String.Compare(kvp.Key, "system", ignoreCase2 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) == 0 ||
 									   kvp.Key.StartsWith("system.", ignoreCase2 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
-									).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+									).ToDictionary(kvp => kvp.Key, kvp => kvp.Value); */
 				}
 
 				type = assemblies.Select(kvp =>
@@ -140,12 +169,19 @@ namespace TypeNameResolver
 												   String.Compare(t2.Name, tn, StringComparison.OrdinalIgnoreCase) == 0 :
 												   String.CompareOrdinal(t2.Name, tn) == 0);
 					}
+
 					return t;
 				})
 				.FirstOrDefault(t => t != null);
 
 				if (type != null)
                     AddToTypeNameCache(typeName, type);
+
+				assemblies
+					.Select(kvp => kvp.Value)
+					.Where(a => type == null || a != type.Assembly)
+					.ToList()
+					.ForEach(a => absence[a] = true);
 
 				return type;
 			}, throwOnError, ignoreCase);
