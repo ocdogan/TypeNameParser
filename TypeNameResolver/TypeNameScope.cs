@@ -6,7 +6,7 @@ namespace TypeNameResolver
 {
 	#region TypeNameScope
 
-	internal class TypeNameScope : ITypeNameScope
+    internal class TypeNameScope : ITypeNameScope, ICloneable
 	{
         #region Field Members
 
@@ -606,10 +606,39 @@ namespace TypeNameResolver
 			return sBuilder.ToString();
 		}
 
-		#endregion ToString
+        public object Clone()
+        {
+            var result = new TypeNameScope(Id, m_Text, m_ExpectedGenericsArgsCount);
 
-		#endregion Methods
-	}
+            result.m_IsArray = m_IsArray;
+            result.m_InBlock = m_InBlock;
+
+            if (m_Name != null)
+                result.m_Name = (TypeNameBlock)m_Name.Clone();
+
+            if (m_AssemblyName != null)
+				result.m_AssemblyName = (TypeNameBlock)m_AssemblyName.Clone();
+
+            if (m_Culture != null)
+				result.m_Culture = (TypeNameBlock)m_Culture.Clone();
+
+            if (m_Version != null)
+				result.m_Version = (TypeNameBlock)m_Version.Clone();
+
+			if (m_PublicKeyToken != null)
+				result.m_PublicKeyToken = (TypeNameBlock)m_PublicKeyToken.Clone();
+
+            if (GenericsArguments != null)
+                foreach (var arg in GenericsArguments)
+                    result.GenericsArguments.Add((ITypeNameScope)arg.Clone());
+
+            return result;
+        }
+
+        #endregion ToString
+
+        #endregion Methods
+    }
 
 	#endregion TypeNameScope
 

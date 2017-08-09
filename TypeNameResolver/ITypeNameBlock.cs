@@ -1,8 +1,10 @@
-﻿namespace TypeNameResolver
+﻿using System;
+
+namespace TypeNameResolver
 {
 	#region ITypeNameBlock
 
-	public interface ITypeNameBlock : IStringView
+	public interface ITypeNameBlock : IStringView, ICloneable
 	{
 		TypeNameBlockType Type { get; }
 	}

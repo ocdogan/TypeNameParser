@@ -4,7 +4,7 @@ namespace TypeNameResolver
 {
 	#region StringView
 
-	internal class StringView : IStringView
+    internal class StringView : IStringView, ICloneable
 	{
 		#region Field Members
 
@@ -108,8 +108,13 @@ namespace TypeNameResolver
 				GetType().Name, Start, End, IsLocked, Text);
 		}
 
-		#endregion Methods
-	}
+        public virtual object Clone()
+        {
+            return new StringView(m_Text, m_Start, m_End, m_Locked);
+        }
+
+        #endregion Methods
+    }
 
 	#endregion StringView
 

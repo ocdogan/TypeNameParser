@@ -4,12 +4,12 @@ namespace TypeNameResolver
 {
 	#region TypeNameBlock
 
-	internal class TypeNameBlock : StringView, ITypeNameBlock, IStringView
+    internal class TypeNameBlock : StringView, ITypeNameBlock, IStringView, ICloneable
 	{
 		#region .Ctors
 
-		public TypeNameBlock(string text, TypeNameBlockType type, int start = -1, int length = -1)
-			: base(text, start, length)
+        public TypeNameBlock(string text, TypeNameBlockType type, int start = -1, int end = -1, bool locked = false)
+            : base(text, start, end, locked)
 		{
 			Type = type;
 		}
@@ -28,6 +28,11 @@ namespace TypeNameResolver
 		{
 			return String.Format("[{0}: Type={1}, Start={2}, End={3}, IsLocked={4}, Text='{5}']",
 				GetType().Name, Type, Start, End, IsLocked, Text);
+		}
+
+        public override object Clone()
+		{
+			return new TypeNameBlock(m_Text, Type, Start, End, IsLocked);
 		}
 
 		#endregion Methods

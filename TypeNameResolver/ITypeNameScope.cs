@@ -6,7 +6,7 @@ namespace TypeNameResolver
 {
 	#region ITypeNameScope
 
-	public interface ITypeNameScope
+    public interface ITypeNameScope : ICloneable
 	{
 		ITypeNameBlock Culture { get; }
 		int ExpectedGenericsArgsCount { get; set; }
