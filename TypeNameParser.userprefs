@@ -1,7 +1,7 @@
 ﻿<Properties StartupConfiguration="{97678F01-351F-4016-AE1B-1100C6FA80CA}|Default">
   <MonoDevelop.Ide.Workbench ActiveDocument="TypeNameResolver/TypeNameParser.cs">
     <Files>
-      <File FileName="TypeNameResolver/TypeNameParser.cs" Line="24" Column="9" />
+      <File FileName="TypeNameResolver/TypeNameParser.cs" Line="161" Column="6" />
       <File FileName="TypeNameParserTest/Program.GeneralTests.cs" Line="67" Column="26" />
     </Files>
   </MonoDevelop.Ide.Workbench>

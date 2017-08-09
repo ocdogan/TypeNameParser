@@ -70,12 +70,19 @@ namespace TypeNameResolver
 				if (cache.TryGetValue(typeName, out type) && type != null)
 					return type;
 
-                ConcurrentDictionary<Assembly, bool> absence;
-                if (!s_AbsenceCache.TryGetValue(typeName, out absence))
-                {
-                    absence = new ConcurrentDictionary<Assembly, bool>();
-                    s_AbsenceCache[typeName] = absence;
-                }
+				ConcurrentDictionary<Assembly, bool> absence;
+				if (!s_AbsenceCache.TryGetValue(typeName, out absence))
+				{
+					absence = new ConcurrentDictionary<Assembly, bool>();
+					s_AbsenceCache[typeName] = absence;
+				}
+
+				var assemblies = AppDomain.CurrentDomain.GetAssemblies()
+							  .Where(a => !absence.ContainsKey(a))
+							  .ToDictionary(a => ignoreCase ? a.GetName().Name.ToLowerInvariant() : a.GetName().Name);
+
+				if (assemblies.Count == 0)
+					return null;
 
 				var tn = typeName;
 				var ns = (string)null;
@@ -89,10 +96,6 @@ namespace TypeNameResolver
 
 					nsEmpty = String.IsNullOrEmpty(ns);
 				}
-
-				var assemblies = AppDomain.CurrentDomain.GetAssemblies()
-                              .Where(a => !absence.ContainsKey(a))
-							  .ToDictionary(a => ignoreCase ? a.GetName().Name.ToLowerInvariant() : a.GetName().Name);
 
 				if (!nsEmpty)
 				{
@@ -117,20 +120,19 @@ namespace TypeNameResolver
                         .Select(name => assemblies[name].GetType(typeName, false, ignoreCase2))
 						.FirstOrDefault(t => t != null);
 
-					assemblies
-                        .Select(kvp => kvp.Value)
-						.Where(a => type == null || a != type.Assembly)
-						.ToList()
-						.ForEach(a => absence[a] = true);
-
 					if (type != null)
 					{
 						AddToTypeNameCache(typeName, type);
+                        s_AbsenceCache.TryRemove(typeName, out absence);
+
                         return type;
 					}
 
                     possibileAssemblyNames.ForEach(name =>
                     {
+                        var asm = assemblies[name];
+						absence[asm] = true;
+						
                         assemblies.Remove(name);
                     });
 				}
@@ -149,12 +151,6 @@ namespace TypeNameResolver
                         absence[a] = true;
                         assemblies.Remove(ignoreCase2 ? a.GetName().Name.ToLowerInvariant() : a.GetName().Name);
                     });
-
-					/* assemblies = assemblies.Where(kvp =>
-									 !(String.Compare(kvp.Key, "mscorlib", ignoreCase2 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) == 0 ||
-									   String.Compare(kvp.Key, "system", ignoreCase2 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) == 0 ||
-									   kvp.Key.StartsWith("system.", ignoreCase2 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
-									).ToDictionary(kvp => kvp.Key, kvp => kvp.Value); */
 				}
 
 				type = assemblies.Select(kvp =>
@@ -174,16 +170,20 @@ namespace TypeNameResolver
 				})
 				.FirstOrDefault(t => t != null);
 
-				if (type != null)
+                if (type != null)
+                {
                     AddToTypeNameCache(typeName, type);
+					s_AbsenceCache.TryRemove(typeName, out absence);
+					
+                    return type;
+                }
 
 				assemblies
 					.Select(kvp => kvp.Value)
-					.Where(a => type == null || a != type.Assembly)
 					.ToList()
 					.ForEach(a => absence[a] = true);
 
-				return type;
+				return null;
 			}, throwOnError, ignoreCase);
 
 			if (throwOnError && result == null)
