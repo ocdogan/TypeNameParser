@@ -8,8 +8,19 @@ namespace TypeNameResolver
 {
     public static class TypeNameParser
     {
+        #region ParsedLRUItem
+
+        private class ParsedLRUItem
+        {
+            public int Count;
+            public ITypeNameScope Scope;
+        }
+
+        #endregion ParsedLRUItem
+
         #region Constants
 
+        private const int MinimumNonCachedRound = 2;
         private const int MaxAllowedGenericsCountCharLength = 3;
 
         #endregion Constants
@@ -22,6 +33,8 @@ namespace TypeNameResolver
         private static readonly ConcurrentDictionary<string, Type> s_OrdinalTypeNameCache = new ConcurrentDictionary<string, Type>();
         private static readonly ConcurrentDictionary<string, Type> s_TypeNameCache = new ConcurrentDictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
 
+		private static readonly ConcurrentDictionary<string, ParsedLRUItem> s_ParserCache = new ConcurrentDictionary<string, ParsedLRUItem>();
+		
         #endregion Static Members
 
 		#region Resolve Methods
@@ -201,9 +214,33 @@ namespace TypeNameResolver
 			if (String.IsNullOrEmpty(str))
 				throw TypeNameParserCommon.NewError(TypeNameError.InvalidTypeName, str, 0, TypeNameToken.Undefined);
 
+			var cacheItem = (ParsedLRUItem)null;
+			if (!debug)
+            {
+                if (!s_ParserCache.TryGetValue(str, out cacheItem))
+                {
+                    cacheItem = new ParsedLRUItem { Count = 1 };
+                    s_ParserCache[str] = cacheItem;
+                }
+                else
+                {
+                    if (cacheItem.Count < int.MaxValue)
+                        cacheItem.Count++;
+                    
+                    if (cacheItem.Scope != null)
+                    {
+                        var root = (ITypeNameScope)cacheItem.Scope.Clone();
+                        return new TypeNameParseResult(root, new ReadonlyStack<TypeNameParseTrace>(new Stack<TypeNameParseTrace>()));
+                    }
+                }
+            }
+
             using (var context = new ParseContext(str, debug))
             {
 				Parse(context);
+                if (!debug && context.Root != null && cacheItem != null && cacheItem.Count > MinimumNonCachedRound)
+                    cacheItem.Scope = (ITypeNameScope)context.Root.Clone();
+                
                 return new TypeNameParseResult(context.Root, new ReadonlyStack<TypeNameParseTrace>(context.Trace));
             }
 		}
@@ -573,7 +610,7 @@ namespace TypeNameResolver
                                     break;
                             }
 
-                            context.CurrentPos += tokenStr.Length - 1;
+                            context.Next(tokenStr.Length - 1);
                         }
                         break;
                     case TypeNameToken.VersionValueStart:

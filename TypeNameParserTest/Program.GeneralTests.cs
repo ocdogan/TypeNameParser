@@ -182,7 +182,7 @@ namespace TypeNameParserTest
 
                 Console.WriteLine(typeName);
 
-                var result = TypeNameParser.Parse(typeName, true);
+                var result = TypeNameParser.Parse(typeName, false);
                 var tn = (result != null ? result.Scope : null);
 
                 Console.ForegroundColor = ConsoleColor.Cyan;

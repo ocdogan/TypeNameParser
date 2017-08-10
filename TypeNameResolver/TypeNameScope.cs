@@ -630,9 +630,19 @@ namespace TypeNameResolver
 
             if (GenericsArguments != null)
                 foreach (var arg in GenericsArguments)
-                    result.GenericsArguments.Add((ITypeNameScope)arg.Clone());
+                {
+                    var clone = (TypeNameScope)arg.Clone();
+                    result.GenericsArguments.Add(clone);
 
-            return result;
+                    clone.m_Parent = result;
+                }
+
+			result.m_AQName = m_AQName;
+			result.m_FullName = m_FullName;
+			result.m_ShortName = m_ShortName;
+			result.m_NameWithAssembly = m_NameWithAssembly;
+
+			return result;
         }
 
         #endregion ToString

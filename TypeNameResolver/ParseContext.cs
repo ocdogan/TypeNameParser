@@ -102,7 +102,7 @@ namespace TypeNameResolver
 		public int CurrentPos
 		{
 			get { return m_Pos; }
-			set
+			private set
 			{
 				m_Pos = Math.Min(m_TextLen, Math.Max(-1, value));
 				m_CurrChar = (m_Pos > -1 && m_Pos < m_TextLen) ? (char?)Text[m_Pos] : null;
@@ -178,21 +178,21 @@ namespace TypeNameResolver
 			m_Trace = null;
 		}
 
-		public bool Next()
+		public bool Next(int step = 1)
 		{
-			if (m_Pos < m_TextLen - 1)
+            if (m_Pos < m_TextLen - 1 && step > 0)
 			{
-				CurrentPos++;
+                CurrentPos = Math.Min(m_TextLen - 1, m_Pos + step);
 				return true;
 			}
 			return false;
 		}
 
-		public bool Previous()
+		public bool Previous(int step = 1)
 		{
-			if (m_Pos > -1)
+            if (m_Pos > -1 && step > 0)
 			{
-				CurrentPos--;
+                CurrentPos = Math.Max(-1, m_Pos - step);
 				return true;
 			}
 			return false;
